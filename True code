@@ -1,0 +1,573 @@
+library(readr)
+library(dplyr)
+library(stargazer)
+library(Hmisc)
+
+#Importing the database
+data_base <- as.data.frame(read_delim("C:/Users/Surface/Documents/M1/S2/Data base.csv", 
+                                      delim = ";", escape_double = FALSE, trim_ws = TRUE))
+View(data_base)
+
+#Renaming variables
+colnames(data_base)[colnames(data_base) == "agea"] <- "age"
+colnames(data_base)[colnames(data_base) == "nwspol"] <- "news_politics"
+colnames(data_base)[colnames(data_base) == "lrscale"] <- "pol_scale"
+colnames(data_base)[colnames(data_base) == "agea"] <- "age"
+colnames(data_base)[colnames(data_base) == "rlgdgr"] <- "religious"
+colnames(data_base)[colnames(data_base) == "chldhhe"] <- "child"
+colnames(data_base)[colnames(data_base) == "edulvlb"] <- "education"
+colnames(data_base)[colnames(data_base) == "hinctnta"] <- "income"
+colnames(data_base)[colnames(data_base) == "ccrdprs"] <- "climate_resp"
+colnames(data_base)[colnames(data_base) == "ccnthum"] <- "climate_cause"
+colnames(data_base)[colnames(data_base) == "wrclmch"] <- "climate_worry"
+
+
+#Labeling variables 
+label(data_base$essround) <- "Indicates which round of the European Social Survey. 8 is the year 2016, 11 is year 2023"
+label(data_base$cntry) <- "Country where individuals responded"
+label(data_base$news_politics) <- "How many minutes per day individuals spend informing about politics"
+label(data_base$pol_scale) <- "Individuals political placement. 0 or 1 Extrem left. 2 or 3 Left. 4, 5 or 6 Center. 7 or 8 Right. 9 or 10 Extrem right"
+label(data_base$religious) <- "How religious individual is on a scale of 0 to 10. 0 not religious at all"
+label(data_base$gndr) <- "Gender, 0 Female, 1 Male"
+label(data_base$child) <- "Ever had childen living in household. 0 No. 1 Yes"
+label(data_base$education) <- "Education level, following the European Qualification Framework"
+label(data_base$income) <- "Income Decile"
+label(data_base$region) <- "Region where responce. For full list : https://ess.sikt.no/en/datafile/ffc43f48-e15a-4a1c-8813-47eda377c355?tab=1&elems=9a9b17b4-b23d-4573-8e26-a715d9245149_3"
+label(data_base$climate_resp) <- "To what extent do you feel a personal responsibility to try to reduce climate change? On a scale of 0 to 10. 0 : not at all"
+label(data_base$climate_worry) <- "How worried about climate change. To a scale of 1 to 5. 1: not worried at all " 
+label(data_base$climate_cause) <- "Climate change cause by human or natural?. On a scale of 1 to 5. 1: entirely"
+label(data_base$htwv2) <- 'Individual living in a country that face a heatwave in the past 2 year. 1 yes. 0 no'
+label(data_base$htwv5) <- 'Individual living in a country that face a heatwave in the past 5 year. 1 yes. 0 no'
+
+
+#Changing the value for unobserved data from the numeriacal value to NA 
+data_base$age[data_base$age == 999] <- NA
+data_base$gndr[data_base$gndr == 9] <- NA
+data_base$education[data_base$education %in% c(5555,7777, 8888, 9999)] <- NA
+data_base$climate_resp[data_base$climate_resp %in% c(66,77,88,99)] <- NA
+data_base$climate_cause[data_base$climate_cause %in% c(66,77,88,99)] <- NA
+data_base$climate_worry[data_base$climate_worry %in% c(6,7,8,9)] <- NA
+data_base$news_politics[data_base$news_politics %in% c(7777,8888,9999)] <- NA
+data_base$pol_scale[data_base$pol_scale %in% c(77,88,99)] <- NA
+data_base$religious[data_base$religious %in% c(77,88,99)] <- NA
+data_base$child[data_base$child %in% c(7,8,9)] <- NA
+data_base$income[data_base$income %in% c(77,88,99)] <- NA
+data_base$marsts[data_base$marsts %in% c(66,77,88,99)] <- NA
+
+#changing value for gender and child, from 1,2 to 0,1
+data_base$gndr <- ifelse(data_base$gndr == 2, 0, data_base$gndr)
+data_base$child <- ifelse(data_base$child == 2, 0, data_base$child)
+
+
+data_base$education <- as.numeric(data_base$education)
+#Regrouping value for education level for easier work
+data_base <- data_base %>%
+  mutate(
+    education = case_when(
+      education %in% c(113, 129) ~ 1,
+      education %in% c(212, 213, 221, 222, 223, 229) ~ 2,
+      education %in% c(311, 312, 313, 321, 322, 323) ~ 3,
+      education %in% c(412, 413, 421, 422, 423) ~ 4,
+      education %in% c(510, 520) ~ 5,
+      education %in% c(610, 620) ~ 6,
+      education %in% c(710, 720) ~ 7,
+      education %in% c(800) ~ 8,
+      TRUE ~ as.numeric(education)  
+    )
+  )
+
+# simplify the variable pol_scale, from 10 to 5 different variables
+
+data_base$pol_scale1 <- ifelse(data_base$pol_scale %in% c(0, 1), 1, 0)
+data_base$pol_scale2 <- ifelse(data_base$pol_scale %in% c(2, 3), 1, 0)
+data_base$pol_scale3 <- ifelse(data_base$pol_scale %in% c(4, 5 ,6), 1, 0)
+data_base$pol_scale4 <- ifelse(data_base$pol_scale %in% c(7, 8), 1, 0)
+data_base$pol_scale5 <- ifelse(data_base$pol_scale %in% c(9, 10), 1, 0)
+
+
+#Creating dummy variables for income
+data_base$income1 <- ifelse(data_base$income == 1, 1, 0)
+data_base$income2 <- ifelse(data_base$income == 2, 1, 0)
+data_base$income3 <- ifelse(data_base$income == 3, 1, 0)
+data_base$income4 <- ifelse(data_base$income == 4, 1, 0)
+data_base$income5 <- ifelse(data_base$income == 5, 1, 0)
+data_base$income6 <- ifelse(data_base$income == 6, 1, 0)
+data_base$income7 <- ifelse(data_base$income == 7, 1, 0)
+data_base$income8 <- ifelse(data_base$income == 8, 1, 0)
+data_base$income9 <- ifelse(data_base$income == 9, 1, 0)
+data_base$income10 <- ifelse(data_base$income == 10, 1, 0)
+
+
+#creating dummy variables for education
+data_base$education1 <- ifelse(data_base$education == 1, 1, 0)
+data_base$education2 <- ifelse(data_base$education == 2, 1, 0)
+data_base$education3 <- ifelse(data_base$education == 3, 1, 0)
+data_base$education4 <- ifelse(data_base$education == 4, 1, 0)
+data_base$education5 <- ifelse(data_base$education == 5, 1, 0)
+data_base$education6 <- ifelse(data_base$education == 6, 1, 0)
+data_base$education7 <- ifelse(data_base$education == 7, 1, 0)
+data_base$education8 <- ifelse(data_base$education == 8, 1, 0)
+
+#creating a binary variable for climate_worry 1 if initial value is 4 or 5 and 0 otherwise
+data_base$worryclmchng <- ifelse(is.na(data_base$climate_worry), NA, 
+                             ifelse(data_base$climate_worry %in% c(4, 5), 1, 
+                                    ifelse(data_base$climate_worry %in% c(1,2,3), 0, NA)))
+
+#creating a binary variable for climate_worry 1 if initial value is 5 and 0 otherwise
+data_base$worryclmchng2 <- ifelse(is.na(data_base$climate_worry), NA, 
+                                 ifelse(data_base$climate_worry %in% c(5), 1, 
+                                        ifelse(data_base$climate_worry %in% c(1,2,3,4), 0, NA)))
+
+#creating a binary variable for climate_cause 1 if initial value is 4 or 5 and 0 otherwise
+data_base$causeclmt <- ifelse(is.na(data_base$climate_cause), NA, 
+                                 ifelse(data_base$climate_cause %in% c(4, 5), 1, 
+                                        ifelse(data_base$climate_cause %in% c(1,2,3), 0, NA)))
+
+#creating a binary variable for climate_cause 1 if initial value is 5 and 0 otherwise
+data_base$causeclmt2 <- ifelse(is.na(data_base$climate_cause), NA, 
+                                  ifelse(data_base$climate_cause %in% c(5), 1, 
+                                         ifelse(data_base$climate_cause %in% c(1,2,3,4), 0, NA)))
+
+#creating a binary variable for climate_resp 1 if initial value is 9 or 10 and 0 otherwise
+data_base$respclmt <- ifelse(is.na(data_base$climate_resp), NA,
+                             ifelse(data_base$climate_resp %in% c(9,10),1,
+                              ifelse(data_base$climate_resp %in% c(0, 1, 2, 3, 4, 5, 6, 7, 8), 0, NA)))
+
+#creating a binary variable for climate_resp 1 if initial value is 7, 8, 9 or 10 and 0 otherwise
+data_base$respclmt2 <- ifelse(is.na(data_base$climate_resp), NA,
+                             ifelse(data_base$climate_resp %in% c(7, 8, 9,10),1,
+                                    ifelse(data_base$climate_resp %in% c(0, 1, 2, 3, 4, 5, 6), 0, NA)))
+
+#creating variable age^2
+data_base$age2 <- data_base$age*data_base$age
+
+
+
+#cross variables
+
+#heat waves and gender
+data_base$gndr_heat2 <- data_base$gndr*data_base$htwv2
+data_base$gndr_heat5 <- data_base$gndr*data_base$htwv5
+
+#heat waves and age
+data_base$age_heat2 <- data_base$age*data_base$htwv2
+data_base$age_heat5 <- data_base$age*data_base$htwv5
+
+#heat waves and political opinion
+data_base$politic1_heat2 <- data_base$pol_scale1*data_base$htwv2
+data_base$politic2_heat2 <- data_base$pol_scale2*data_base$htwv2
+data_base$politic3_heat2 <- data_base$pol_scale3*data_base$htwv2
+data_base$politic4_heat2 <- data_base$pol_scale4*data_base$htwv2
+data_base$politic5_heat2 <- data_base$pol_scale5*data_base$htwv2
+
+data_base$politic1_heat5 <- data_base$pol_scale1*data_base$htwv5
+data_base$politic2_heat5 <- data_base$pol_scale2*data_base$htwv5
+data_base$politic3_heat5 <- data_base$pol_scale3*data_base$htwv5
+data_base$politic4_heat5 <- data_base$pol_scale4*data_base$htwv5
+data_base$politic5_heat5 <- data_base$pol_scale5*data_base$htwv5
+
+
+#heat waves and income
+data_base$income1_heat2 <- data_base$income1*data_base$htwv2
+data_base$income2_heat2 <- data_base$income2*data_base$htwv2
+data_base$income3_heat2 <- data_base$income3*data_base$htwv2
+data_base$income4_heat2 <- data_base$income4*data_base$htwv2
+data_base$income5_heat2 <- data_base$income5*data_base$htwv2
+data_base$income6_heat2 <- data_base$income6*data_base$htwv2
+data_base$income7_heat2 <- data_base$income7*data_base$htwv2
+data_base$income8_heat2 <- data_base$income8*data_base$htwv2
+data_base$income9_heat2 <- data_base$income9*data_base$htwv2
+data_base$income10_heat2 <- data_base$income10*data_base$htwv2
+
+data_base$income1_heat5 <- data_base$income1*data_base$htwv5
+data_base$income2_heat5 <- data_base$income2*data_base$htwv5
+data_base$income3_heat5 <- data_base$income3*data_base$htwv5
+data_base$income4_heat5 <- data_base$income4*data_base$htwv5
+data_base$income5_heat5 <- data_base$income5*data_base$htwv5
+data_base$income6_heat5 <- data_base$income6*data_base$htwv5
+data_base$income7_heat5 <- data_base$income7*data_base$htwv5
+data_base$income8_heat5 <- data_base$income8*data_base$htwv5
+data_base$income9_heat5 <- data_base$income9*data_base$htwv5
+data_base$income10_heat5 <- data_base$income10*data_base$htwv5
+
+#creating dummy variables for countries to use as fixed effect
+data_base$FE_AT <- ifelse(data_base$cntry == "AT", 1, 0)
+data_base$FE_BE <- ifelse(data_base$cntry == "BE", 1, 0)
+data_base$FE_CH <- ifelse(data_base$cntry == "CH", 1, 0)
+data_base$FE_DE <- ifelse(data_base$cntry == "DE", 1, 0)
+data_base$FE_ES <- ifelse(data_base$cntry == "ES", 1, 0)
+data_base$FE_FI <- ifelse(data_base$cntry == "FI", 1, 0)
+data_base$FE_FR <- ifelse(data_base$cntry == "FR", 1, 0)
+data_base$FE_GB <- ifelse(data_base$cntry == "GB", 1, 0)
+data_base$FE_HU <- ifelse(data_base$cntry == "HU", 1, 0)
+data_base$FE_IE <- ifelse(data_base$cntry == "IE", 1, 0)
+data_base$FE_IS <- ifelse(data_base$cntry == "IS", 1, 0)
+data_base$FE_IT <- ifelse(data_base$cntry == "IT", 1, 0)
+data_base$FE_LT <- ifelse(data_base$cntry == "LT", 1, 0)
+data_base$FE_NL <- ifelse(data_base$cntry == "NL", 1, 0)
+data_base$FE_NO <- ifelse(data_base$cntry == "NO", 1, 0)
+data_base$FE_PL <- ifelse(data_base$cntry == "PL", 1, 0)
+data_base$FE_PT <- ifelse(data_base$cntry == "PT", 1, 0)
+data_base$FE_SE <- ifelse(data_base$cntry == "SE", 1, 0)
+data_base$FE_SI <- ifelse(data_base$cntry == "SI", 1, 0)
+
+
+#creating dummy variables for ess round for time fixe effect
+data_base$ess_8 <- ifelse(data_base$essround == 8 ,1, 0)
+data_base$ess_11 <- ifelse(data_base$essround == 11, 1, 0)
+
+
+
+
+
+#Creating the regional heat waves variables
+
+#Load new database 
+Data_CDD <- read_delim("C:/Users/Surface/Documents/M1/S2/Data base 2.csv", 
+                       delim = ";", escape_double = FALSE, trim_ws = TRUE)
+
+#Keeping only the cooling degree days
+Data_CDD <- Data_CDD[Data_CDD$indic_nrg == "CDD", ]
+
+#Putting the years variable as numeric
+Data_CDD[, 3:47] <- lapply(Data_CDD[, 3:47], as.numeric)
+
+#Computing the mean and standard deviation of CDD between 1979 and 2010
+mean_cdd <- rowMeans(Data_CDD[, 3:34])
+sd_cdd <- apply(Data_CDD[, 3:34], 1, sd)
+
+#Defining the threshold for a heatwave
+threshold <- mean_cdd + 2 * sd_cdd
+
+#Adding a column to indicate heatwaves for each year
+for (year in 1979:2023) {
+  Data_CDD[[paste0("heatwave_", year)]] <- ifelse(Data_CDD[[as.character(year)]] > threshold, 1, 0)
+}
+
+#Merging individual data with CDD data based on the region
+data_base_merged <- merge(data_base, Data_CDD[, c("region", paste0("heatwave_", 2011:2023))], by = "region", all.x = TRUE)
+
+
+#Function to check for heatwaves in the specified years
+check_heatwave <- function(years) {
+  rowSums(data_base_merged[, years]) > 0
+}
+
+#Adding new variables htwv2_re and htwv5_re to data_base_merged
+data_base_merged$htwv2_re <- ifelse(data_base_merged$essround == 8,
+                                    as.numeric(check_heatwave(paste0("heatwave_", 2014:2016))),
+                                    as.numeric(check_heatwave(paste0("heatwave_", 2021:2023))))
+
+data_base_merged$htwv5_re <- ifelse(data_base_merged$essround == 8,
+                                    as.numeric(check_heatwave(paste0("heatwave_", 2011:2016))),
+                                    as.numeric(check_heatwave(paste0("heatwave_", 2018:2023))))
+
+
+label(data_base_merged$htwv2_re) <- "Individual living in a region that face a heatwave in the past 2 year. 1 yes. 0 no"
+label(data_base_merged$htwv5_re) <- "Individual living in a region that face a heatwave in the past 5 year. 1 yes. 0 no"
+
+View(data_base_merged)
+
+#Creating agreagate country,year data about percentage of individuals with high worry about climate change
+
+#aggregate_worry <- data_base_merged %>% group_by(cntry,essround) %>% summarise(
+#  percentage_high_worry = mean(worryclmchng, na.rm = TRUE)*100
+#)
+
+
+
+
+
+
+
+#Regression 
+#Regression with explanatory variable : climate_worry
+
+reg_worry_heat2_1 <- lm(worryclmchng ~ news_politics + religious + gndr + age + htwv2 + education1 + education2 + education3 + education4 + education5 + education6 + education7 + 
+                    pol_scale1 + pol_scale2 + pol_scale3 + pol_scale4 + income1 + income2 + income3 + income4 + income5 + income6 + income7 + income8 + income9
+                   + child, data= data_base_merged)
+
+stargazer(reg_worry_heat2_1, type = "text")
+stargazer(reg_worry_heat2_1, type = "latex")
+
+
+reg_worry_heat5_1 <- lm(worryclmchng ~ news_politics + religious + gndr + age + htwv5 + education1 + education2 + education3 + education4 + education5 + education6 + education7 + 
+                    pol_scale1 + pol_scale2 + pol_scale3 + pol_scale4 + income1 + income2 + income3 + income4 + income5 + income6 + income7 + income8 + income9
+                  + marsts + child, data= data_base_merged)
+
+stargazer(reg_worry_heat5_1, type = "text")
+
+
+
+reg_worry_heat2_2 <- lm(worryclmchng ~ news_politics + religious + gndr + age + age2 + htwv2 + education1 + education2 + education3 + education4 + education5 + education6 + education7 + 
+                          pol_scale1 + pol_scale2 + pol_scale3 + pol_scale4 + income1 + income2 + income3 + income4 + income5 + income6 + income7 + income8 + income9
+                         + child + income1_heat2 + income2_heat2 + income3_heat2 + income4_heat2 + income5_heat2 + income6_heat2 + income7_heat2 + income8_heat2 + income9_heat2
+                        + politic1_heat2 + politic2_heat2 + politic3_heat2 + politic4_heat2 + age_heat2 + gndr_heat2 , data= data_base)
+
+stargazer(reg_worry_heat2_2, type = "text")
+
+
+
+
+reg_worry_heat5_2 <- lm(worryclmchng ~ news_politics + religious + gndr + age +age2 + htwv5 + education1 + education2 + education3 + education4 + education5 + education6 + education7 + 
+                    pol_scale1 + pol_scale2 + pol_scale3 + pol_scale4 + income1 + income2 + income3 + income4 + income5 + income6 + income7 + income8 + income9
+                  + marsts + child + income1_heat5 + income2_heat5 + income3_heat5 + income4_heat5 + income5_heat5 + income6_heat5 + income7_heat5 + income8_heat5 + income9_heat5
+                  + politic1_heat5 + politic2_heat5 + politic3_heat5 + politic4_heat5 + age_heat5 + gndr_heat5, data= data_base_merged)
+
+
+stargazer(reg_worry_heat5_2, type = "text")
+
+
+reg_worry_heat2_3 <- lm(worryclmchng ~ news_politics + religious + gndr + age +age2 + htwv2 + education1 + education2 + education3 + education4 + education5 + education6 + education7 + 
+                          pol_scale1 + pol_scale2 + pol_scale3 + pol_scale4 + income1 + income2 + income3 + income4 + income5 + income6 + income7 + income8 + income9
+                        + marsts + child + income1_heat2 + income2_heat2 + income3_heat2 + income4_heat2 + income5_heat2 + income6_heat2 + income7_heat2 + income8_heat2 + income9_heat2
+                        + politic1_heat2 + politic2_heat2 + politic3_heat2 + politic4_heat2 + age_heat2 + gndr_heat2 + factor(cntry) + factor(essround), data= data_base_merged)
+
+
+stargazer(reg_worry_heat2_3, type = "text")
+
+
+
+reg_worry_heat5_3 <- lm(worryclmchng ~ news_politics + religious + gndr + age +age2 + htwv5 + education1 + education2 + education3 + education4 + education5 + education6 + education7 + 
+                    pol_scale1 + pol_scale2 + pol_scale3 + pol_scale4 + income1 + income2 + income3 + income4 + income5 + income6 + income7 + income8 + income9
+                  + marsts + child + income1_heat5 + income2_heat5 + income3_heat5 + income4_heat5 + income5_heat5 + income6_heat5 + income7_heat5 + income8_heat5 + income9_heat5
+                  + politic1_heat5 + politic2_heat5 + politic3_heat5 + politic4_heat5 + age_heat5 + gndr_heat5 + factor(cntry) + factor(essround), data= data_base_merged)
+
+
+stargazer(reg_worry_heat5_3, type = "text")
+
+#Regression with lower condition on being in the 1 group of the dummy
+
+reg_worry2_heat2_3 <- lm(worryclmchng2 ~ news_politics + religious + gndr + age +age2 + htwv2 + education1 + education2 + education3 + education4 + education5 + education6 + education7 + 
+                          pol_scale1 + pol_scale2 + pol_scale3 + pol_scale4 + income1 + income2 + income3 + income4 + income5 + income6 + income7 + income8 + income9
+                        + marsts + child + income1_heat2 + income2_heat2 + income3_heat2 + income4_heat2 + income5_heat2 + income6_heat2 + income7_heat2 + income8_heat2 + income9_heat2
+                        + politic1_heat2 + politic2_heat2 + politic3_heat2 + politic4_heat2 + age_heat2 + gndr_heat2 + factor(cntry) + factor(essround), data= data_base_merged)
+
+
+stargazer(reg_worry2_heat2_3, type = "text")
+
+
+
+reg_worry2_heat5_3 <- lm(worryclmchng2 ~ news_politics + religious + gndr + age +age2 + htwv5 + education1 + education2 + education3 + education4 + education5 + education6 + education7 + 
+                          pol_scale1 + pol_scale2 + pol_scale3 + pol_scale4 + income1 + income2 + income3 + income4 + income5 + income6 + income7 + income8 + income9
+                        + marsts + child + income1_heat5 + income2_heat5 + income3_heat5 + income4_heat5 + income5_heat5 + income6_heat5 + income7_heat5 + income8_heat5 + income9_heat5
+                        + politic1_heat5 + politic2_heat5 + politic3_heat5 + politic4_heat5 + age_heat5 + gndr_heat5 + factor(cntry) + factor(essround), data= data_base_merged)
+
+
+stargazer(reg_worry2_heat5_3, type = "text")
+
+
+
+
+#regression with explanatory variable : climate_cause
+
+reg_cause_heat2_1 <- lm(causeclmt ~ news_politics + religious + gndr + age + htwv2 + education1 + education2 + education3 + education4 + education5 + education6 + education7 + 
+                          pol_scale1 + pol_scale2 + pol_scale3 + pol_scale4 + income1 + income2 + income3 + income4 + income5 + income6 + income7 + income8 + income9
+                        + child, data= data_base_merged)
+
+stargazer(reg_cause_heat2_1, type = "text")
+
+
+
+reg_cause_heat5_1 <- lm(causeclmt ~ news_politics + religious + gndr + age + htwv5 + education1 + education2 + education3 + education4 + education5 + education6 + education7 + 
+                          pol_scale1 + pol_scale2 + pol_scale3 + pol_scale4 + income1 + income2 + income3 + income4 + income5 + income6 + income7 + income8 + income9
+                        + marsts + child, data= data_base_merged)
+
+stargazer(reg_cause_heat5_1, type = "text")
+
+
+
+reg_cause_heat2_2 <- lm(causeclmt ~ news_politics + religious + gndr + age + age2 + htwv2 + education1 + education2 + education3 + education4 + education5 + education6 + education7 + 
+                          pol_scale1 + pol_scale2 + pol_scale3 + pol_scale4 + income1 + income2 + income3 + income4 + income5 + income6 + income7 + income8 + income9
+                        +  child + income1_heat2 + income2_heat2 + income3_heat2 + income4_heat2 + income5_heat2 + income6_heat2 + income7_heat2 + income8_heat2 + income9_heat2
+                        + politic1_heat2 + politic2_heat2 + politic3_heat2 + politic4_heat2 + age_heat2 + gndr_heat2, data= data_base)
+
+stargazer(reg_cause_heat2_2, type = "text")
+
+
+
+
+reg_cause_heat5_2 <- lm(causeclmt ~ news_politics + religious + gndr + age +age2 + htwv5 + education1 + education2 + education3 + education4 + education5 + education6 + education7 + 
+                          pol_scale1 + pol_scale2 + pol_scale3 + pol_scale4 + income1 + income2 + income3 + income4 + income5 + income6 + income7 + income8 + income9
+                        + marsts + child + income1_heat5 + income2_heat5 + income3_heat5 + income4_heat5 + income5_heat5 + income6_heat5 + income7_heat5 + income8_heat5 + income9_heat5
+                        + politic1_heat5 + politic2_heat5 + politic3_heat5 + politic4_heat5 + age_heat5 + gndr_heat5, data= data_base_merged)
+
+
+stargazer(reg_cause_heat5_2, type = "text")
+
+
+reg_cause_heat2_3 <- lm(causeclmt ~ news_politics + religious + gndr + age +age2 + htwv2 + education1 + education2 + education3 + education4 + education5 + education6 + education7 + 
+                          pol_scale1 + pol_scale2 + pol_scale3 + pol_scale4 + income1 + income2 + income3 + income4 + income5 + income6 + income7 + income8 + income9
+                        + marsts + child + income1_heat2 + income2_heat2 + income3_heat2 + income4_heat2 + income5_heat2 + income6_heat2 + income7_heat2 + income8_heat2 + income9_heat2
+                        + politic1_heat2 + politic2_heat2 + politic3_heat2 + politic4_heat2 + age_heat2 + gndr_heat2 + factor(cntry) + factor(essround), data= data_base_merged)
+
+
+stargazer(reg_cause_heat2_3, type = "text")
+
+
+
+reg_cause_heat5_3 <- lm(causeclmt ~ news_politics + religious + gndr + age +age2 + htwv5 + education1 + education2 + education3 + education4 + education5 + education6 + education7 + 
+                          pol_scale1 + pol_scale2 + pol_scale3 + pol_scale4 + income1 + income2 + income3 + income4 + income5 + income6 + income7 + income8 + income9
+                        + marsts + child + income1_heat5 + income2_heat5 + income3_heat5 + income4_heat5 + income5_heat5 + income6_heat5 + income7_heat5 + income8_heat5 + income9_heat5
+                        + politic1_heat5 + politic2_heat5 + politic3_heat5 + politic4_heat5 + age_heat5 + gndr_heat5 + factor(cntry) + factor(essround), data= data_base_merged)
+
+
+stargazer(reg_cause_heat5_3, type = "text")
+
+#Regression with lower condition on being in the 1 group of the dummy
+
+reg_cause2_heat2_3 <- lm(causeclmt2 ~ news_politics + religious + gndr + age +age2 + htwv2 + education1 + education2 + education3 + education4 + education5 + education6 + education7 + 
+                          pol_scale1 + pol_scale2 + pol_scale3 + pol_scale4 + income1 + income2 + income3 + income4 + income5 + income6 + income7 + income8 + income9
+                        + marsts + child + income1_heat2 + income2_heat2 + income3_heat2 + income4_heat2 + income5_heat2 + income6_heat2 + income7_heat2 + income8_heat2 + income9_heat2
+                        + politic1_heat2 + politic2_heat2 + politic3_heat2 + politic4_heat2 + age_heat2 + gndr_heat2 + factor(cntry) + factor(essround), data= data_base_merged)
+
+
+stargazer(reg_cause2_heat2_3, type = "text")
+
+
+
+reg_cause2_heat5_3 <- lm(causeclmt2 ~ news_politics + religious + gndr + age +age2 + htwv5 + education1 + education2 + education3 + education4 + education5 + education6 + education7 + 
+                          pol_scale1 + pol_scale2 + pol_scale3 + pol_scale4 + income1 + income2 + income3 + income4 + income5 + income6 + income7 + income8 + income9
+                        + marsts + child + income1_heat5 + income2_heat5 + income3_heat5 + income4_heat5 + income5_heat5 + income6_heat5 + income7_heat5 + income8_heat5 + income9_heat5
+                        + politic1_heat5 + politic2_heat5 + politic3_heat5 + politic4_heat5 + age_heat5 + gndr_heat5 + factor(cntry) + factor(essround), data= data_base_merged)
+
+
+stargazer(reg_cause2_heat5_3, type = "text")
+
+
+
+
+
+#regression with explanatory variable : climate_resp
+
+
+reg_resp_heat2_1 <- lm(respclmt ~ news_politics + religious + gndr + age + htwv2 + education1 + education2 + education3 + education4 + education5 + education6 + education7 + 
+                          pol_scale1 + pol_scale2 + pol_scale3 + pol_scale4 + income1 + income2 + income3 + income4 + income5 + income6 + income7 + income8 + income9
+                        +  child, data= data_base_merged)
+
+stargazer(reg_resp_heat2_1, type = "text")
+
+
+
+reg_resp_heat5_1 <- lm(respclmt ~ news_politics + religious + gndr + age + htwv5 + education1 + education2 + education3 + education4 + education5 + education6 + education7 + 
+                          pol_scale1 + pol_scale2 + pol_scale3 + pol_scale4 + income1 + income2 + income3 + income4 + income5 + income6 + income7 + income8 + income9
+                        + marsts + child, data= data_base_merged)
+
+stargazer(reg_resp_heat5_1, type = "text")
+
+
+
+reg_resp_heat2_2 <- lm(respclmt ~ news_politics + religious + gndr + age + age2 + htwv2 + education1 + education2 + education3 + education4 + education5 + education6 + education7 + 
+                          pol_scale1 + pol_scale2 + pol_scale3 + pol_scale4 + income1 + income2 + income3 + income4 + income5 + income6 + income7 + income8 + income9
+                        + child + income1_heat2 + income2_heat2 + income3_heat2 + income4_heat2 + income5_heat2 + income6_heat2 + income7_heat2 + income8_heat2 + income9_heat2
+                       + politic1_heat2 + politic2_heat2 + politic3_heat2 + politic4_heat2 + age_heat2 + gndr_heat2, data= data_base)
+
+stargazer(reg_resp_heat2_2, type = "text")
+
+
+
+
+reg_resp_heat5_2 <- lm(respclmt ~ news_politics + religious + gndr + age +age2 + htwv5 + education1 + education2 + education3 + education4 + education5 + education6 + education7 + 
+                          pol_scale1 + pol_scale2 + pol_scale3 + pol_scale4 + income1 + income2 + income3 + income4 + income5 + income6 + income7 + income8 + income9
+                        + marsts + child + income1_heat5 + income2_heat5 + income3_heat5 + income4_heat5 + income5_heat5 + income6_heat5 + income7_heat5 + income8_heat5 + income9_heat5
+                        + politic1_heat5 + politic2_heat5 + politic3_heat5 + politic4_heat5 + age_heat5 + gndr_heat5, data= data_base_merged)
+
+
+stargazer(reg_resp_heat5_2, type = "text")
+
+
+reg_resp_heat2_3 <- lm(respclmt ~ news_politics + religious + gndr + age +age2 + htwv2 + education1 + education2 + education3 + education4 + education5 + education6 + education7 + 
+                          pol_scale1 + pol_scale2 + pol_scale3 + pol_scale4 + income1 + income2 + income3 + income4 + income5 + income6 + income7 + income8 + income9
+                        + marsts + child + income1_heat2 + income2_heat2 + income3_heat2 + income4_heat2 + income5_heat2 + income6_heat2 + income7_heat2 + income8_heat2 + income9_heat2
+                        + politic1_heat2 + politic2_heat2 + politic3_heat2 + politic4_heat2 + age_heat2 + gndr_heat2 + factor(cntry) + factor(essround), data= data_base_merged)
+
+
+stargazer(reg_resp_heat2_3, type = "text")
+
+
+
+reg_resp_heat5_3 <- lm(respclmt ~ news_politics + religious + gndr + age +age2 + htwv5 + education1 + education2 + education3 + education4 + education5 + education6 + education7 + 
+                          pol_scale1 + pol_scale2 + pol_scale3 + pol_scale4 + income1 + income2 + income3 + income4 + income5 + income6 + income7 + income8 + income9
+                        + marsts + child + income1_heat5 + income2_heat5 + income3_heat5 + income4_heat5 + income5_heat5 + income6_heat5 + income7_heat5 + income8_heat5 + income9_heat5
+                        + politic1_heat5 + politic2_heat5 + politic3_heat5 + politic4_heat5 + age_heat5 + gndr_heat5 + factor(cntry) + factor(essround), data= data_base_merged)
+
+
+stargazer(reg_resp_heat5_3, type = "text")
+
+
+#regression with smaller condition on being part of the 1 dummy
+
+reg_resp2_heat2_3 <- lm(respclmt ~ news_politics + religious + gndr + age +age2 + htwv2 + education1 + education2 + education3 + education4 + education5 + education6 + education7 + 
+                         pol_scale1 + pol_scale2 + pol_scale3 + pol_scale4 + income1 + income2 + income3 + income4 + income5 + income6 + income7 + income8 + income9
+                       + marsts + child + income1_heat2 + income2_heat2 + income3_heat2 + income4_heat2 + income5_heat2 + income6_heat2 + income7_heat2 + income8_heat2 + income9_heat2
+                       + politic1_heat2 + politic2_heat2 + politic3_heat2 + politic4_heat2 + age_heat2 + gndr_heat2 + factor(cntry) + factor(essround), data= data_base_merged)
+
+
+stargazer(reg_resp2_heat2_3, type = "text")
+
+
+reg_resp2_heat5_3 <- lm(respclmt2 ~ news_politics + religious + gndr + age +age2 + htwv5 + education1 + education2 + education3 + education4 + education5 + education6 + education7 + 
+                         pol_scale1 + pol_scale2 + pol_scale3 + pol_scale4 + income1 + income2 + income3 + income4 + income5 + income6 + income7 + income8 + income9
+                       + marsts + child + income1_heat5 + income2_heat5 + income3_heat5 + income4_heat5 + income5_heat5 + income6_heat5 + income7_heat5 + income8_heat5 + income9_heat5
+                       + politic1_heat5 + politic2_heat5 + politic3_heat5 + politic4_heat5 + age_heat5 + gndr_heat5 + factor(cntry) + factor(essround), data= data_base_merged)
+
+
+stargazer(reg_resp2_heat5_3, type = "text")
+
+
+
+
+
+
+
+
+stargazer(
+  data_base["age"],           # Sélectionner la variable age
+  type = "latex",              # Format LaTeX
+  title = "Descriptive Statistics for age", # Titre du tableau
+  summary.stat = c("n", "mean", "sd", "min", "max") # Statistiques à inclure
+)
+stargazer(data_base["age"], type = "latex", title = "Descrptive statistics for age")
+
+library(knitr)
+library(kableExtra)
+
+# Liste des variables qualitatives
+qual_vars <- c("gndr", "education", "worryclmchng", "htwv2", "htwv5")
+
+stargazer(
+  data_base["age"],           # Sélectionner la variable age
+  type = "latex",              # Format LaTeX
+  title = "Descriptive Statistics for age", # Titre du tableau
+  summary.stat = c("n", "mean", "sd", "min", "max") # Statistiques à inclure
+)
+stargazer(data_base["age"], type = "latex", title = "Descrptive statistics for age")
+
+library(knitr)
+library(kableExtra)
+
+# Liste des variables qualitatives
+qual_vars <- c("gndr", "education", "worryclmchng", "htwv2", "htwv5")
+
+# Générer les tableaux de fréquences
+freq_tables <- lapply(qual_vars, function(var) {
+  freq <- table(data_base[[var]], useNA = "ifany")  # Fréquences
+  prop <- prop.table(freq) * 100  # Pourcentages
+  data.frame(
+    Variable = var,               # Nom de la variable
+    Category = names(freq),       # Catégories
+    Frequency = as.vector(freq),  # Fréquences
+    Percentage = round(as.vector(prop), 2)  # Pourcentages arrondis
+  )
+})
+# Ajouter tous les tableaux ensemble
+combined_table <- do.call(rbind, freq_tables)
+
+lapply(freq_tables, function(table) {
+  kable(table, format = "latex", booktabs = TRUE, col.names = c("Variable", "Category", "Frequency", "Percentage (%)")) %>%
+    kable_styling(latex_options = c("hold_position"))
+})
+
+kable(combined_table, format = "latex", booktabs = TRUE, 
+      col.names = c("Variable", "Category", "Frequency", "Percentage (%)")) %>%
+  kable_styling(latex_options = c("hold_position"))
