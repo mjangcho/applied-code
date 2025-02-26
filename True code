@@ -33,9 +33,9 @@ label(data_base$child) <- "Ever had childen living in household. 0 No. 1 Yes"
 label(data_base$education) <- "Education level, following the European Qualification Framework"
 label(data_base$income) <- "Income decile"
 label(data_base$region) <- "Region where response. For full list : https://ess.sikt.no/en/datafile/ffc43f48-e15a-4a1c-8813-47eda377c355?tab=1&elems=9a9b17b4-b23d-4573-8e26-a715d9245149_3"
-label(data_base$climate_resp) <- " To what extent the individual feels a personal responsibility to try to reduce climate change. 1 if the individual feels responsability, 0 not"
-label(data_base$climate_worry) <- "How worried the individual is about climate change. 1 if the individual is worried, 0 if not" 
-label(data_base$climate_cause) <- "To what extent the individual thinks climate change has a human cause. 1 if the individual thinks it has a human cause, 0 if not"
+label(data_base$climate_resp) <- " To what extent the individual feels a personal responsibility to try to reduce climate change. On a scale from 0 to 10, 10 the most responsability."
+label(data_base$climate_worry) <- "How worried the individual is about climate change. On a scale from 1 to 5, 5 the most worried." 
+label(data_base$climate_cause) <- "To what extent the individual thinks climate change has a human cause. On a scale from 1 to 5, 5 for human cause exclusively"
 label(data_base$htwv2) <- 'The individual lives in a country that faced a heatwave in the past 2 years. 1 yes. 0 no'
 label(data_base$htwv5) <- 'The individual lives in a country that faced a heatwave in the past 5 years. 1 yes. 0 no'
 
@@ -129,19 +129,21 @@ data_base$causeclmt2 <- ifelse(is.na(data_base$climate_cause), NA,
                                          ifelse(data_base$climate_cause %in% c(1,2,3,4), 0, NA)))
 
 #creating a binary variable for climate_resp 1 if initial value is 9 or 10 and 0 otherwise
-data_base$respclmt <- ifelse(is.na(data_base$climate_resp), NA,
+data_base$respclmt2 <- ifelse(is.na(data_base$climate_resp), NA,
                              ifelse(data_base$climate_resp %in% c(9,10),1,
                               ifelse(data_base$climate_resp %in% c(0, 1, 2, 3, 4, 5, 6, 7, 8), 0, NA)))
 
 #creating a binary variable for climate_resp 1 if initial value is 7, 8, 9 or 10 and 0 otherwise
-data_base$respclmt2 <- ifelse(is.na(data_base$climate_resp), NA,
+data_base$respclmt <- ifelse(is.na(data_base$climate_resp), NA,
                              ifelse(data_base$climate_resp %in% c(7, 8, 9,10),1,
                                     ifelse(data_base$climate_resp %in% c(0, 1, 2, 3, 4, 5, 6), 0, NA)))
 
 #creating variable age^2
 data_base$age2 <- data_base$age*data_base$age
 
-
+label(data_base$worryclmchng) <- "Is the invividual worried about climate change. 1 yes, 0 no."
+label(data_base$respclmt) <- "Does the individual feel a personal responsibility to try to reduce climate change. 1 yes, 0 no."
+label(data_base$causeclmt) <- "Does the individual think climate change has a human cause. 1 yes, 0 no."
 
 #cross variables
 
