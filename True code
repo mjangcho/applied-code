@@ -141,7 +141,7 @@ data_base$respclmt <- ifelse(is.na(data_base$climate_resp), NA,
 #creating variable age^2
 data_base$age2 <- data_base$age*data_base$age
 
-label(data_base$worryclmchng) <- "Is the invividual worried about climate change. 1 yes, 0 no."
+label(data_base$worryclmchng) <- "Is the individual worried about climate change. 1 yes, 0 no."
 label(data_base$respclmt) <- "Does the individual feel a personal responsibility to try to reduce climate change. 1 yes, 0 no."
 label(data_base$causeclmt) <- "Does the individual think climate change has a human cause. 1 yes, 0 no."
 
