@@ -29,7 +29,7 @@ label(data_base$news_politics) <- "How many minutes per day the individual spend
 label(data_base$pol_scale) <- "Individual's political placement. 1 Far left. 2 Left. 3 Center. 4 Right. 5 Far right"
 label(data_base$religious) <- "How religious the individual is on a scale of 0 to 10. 0 not religious at all"
 label(data_base$gndr) <- "Gender. 0 Female, 1 Male"
-label(data_base$child) <- "Ever had childen living in household. 0 No. 1 Yes"
+label(data_base$child) <- "Ever had children living in household. 0 No. 1 Yes"
 label(data_base$education) <- "Education level, following the European Qualification Framework"
 label(data_base$income) <- "Income decile"
 label(data_base$region) <- "Region where response. For full list : https://ess.sikt.no/en/datafile/ffc43f48-e15a-4a1c-8813-47eda377c355?tab=1&elems=9a9b17b4-b23d-4573-8e26-a715d9245149_3"
